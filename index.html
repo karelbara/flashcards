@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards App</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            color: #333;
+            width: 90%;
+            max-width: 500px;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        .flashcard {
+            width: 100%;
+            height: 300px; /* Increased the height */
+            background: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px; /* Increased the font size */
+            text-align: center;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s ease-in-out;
+            padding: 30px; /* Increased padding for a more spacious look */
+            user-select: none;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Increased shadow for better visibility */
+        }
+
+        .flashcard:hover {
+            background: #0056b3;
+            transform: scale(1.05); /* Increased scale on hover */
+        }
+
+        .flashcard.show-answer {
+            background: #28a745;
+        }
+
+
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input, button {
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            width: 100%;
+            outline: none;
+        }
+
+        input {
+            border: 1px solid #ddd;
+            padding: 10px;
+            transition: 0.3s ease-in-out;
+        }
+
+        input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 6px rgba(0, 123, 255, 0.4);
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .delete-btn {
+            background: red;
+        }
+
+        .delete-btn:hover {
+            background: darkred;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Flashcards</h1>
+        <div class="flashcard" onclick="toggleFlip()" id="flashcard">
+            Click to see the answer
+        </div>
+        <div class="controls">
+            <button onclick="nextFlashcard()">Next Flashcard</button>
+            <input id="question" type="text" placeholder="Enter Question">
+            <input id="answer" type="text" placeholder="Enter Answer">
+            <button onclick="addFlashcard()">Add Flashcard</button>
+            <button class="delete-btn" onclick="deleteCurrentFlashcard()">Delete Flashcard</button>
+        </div>
+    </div>
+
+    <script>
+        let flashcards = [];
+        let currentIndex = -1;
+        let showingAnswer = false;
+
+        // Load flashcards from server
+        fetchFlashcards();
+
+        function fetchFlashcards() {
+            fetch('flashcards.php', {
+                method: 'GET',
+            })
+            .then(response => response.json())
+            .then(data => {
+                flashcards = data;
+                nextFlashcard();
+            })
+            .catch((error) => console.error('Error fetching flashcards:', error));
+        }
+
+        function saveFlashcardsToServer(data) {
+            fetch('flashcards.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => console.log('Data saved successfully:', data))
+            .catch((error) => console.error('Error:', error));
+        }
+
+        function addFlashcard() {
+            const question = document.getElementById("question").value.trim();
+            const answer = document.getElementById("answer").value.trim();
+            if (question && answer) {
+                flashcards.push({ question, answer });
+                saveFlashcardsToServer(flashcards);
+                document.getElementById("question").value = "";
+                document.getElementById("answer").value = "";
+                nextFlashcard();
+            }
+        }
+
+        function deleteCurrentFlashcard() {
+            if (flashcards.length > 0 && currentIndex !== -1) {
+                flashcards.splice(currentIndex, 1);
+                saveFlashcardsToServer(flashcards);
+                nextFlashcard();
+            }
+        }
+
+        function nextFlashcard() {
+            if (flashcards.length === 0) {
+                document.getElementById("flashcard").innerText = "No flashcards available!";
+                return;
+            }
+
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * flashcards.length);
+            } while (newIndex === currentIndex && flashcards.length > 1);
+
+            currentIndex = newIndex;
+            showingAnswer = false;
+            renderFlashcard();
+        }
+
+        function toggleFlip() {
+            if (flashcards.length === 0) return;
+            showingAnswer = !showingAnswer;
+            renderFlashcard();
+        }
+
+        function renderFlashcard() {
+            const flashcardElement = document.getElementById("flashcard");
+            flashcardElement.classList.toggle("show-answer", showingAnswer);
+            flashcardElement.innerText = showingAnswer ? flashcards[currentIndex].answer : flashcards[currentIndex].question;
+        }
+    </script>
+</body>
+</html>

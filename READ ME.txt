@@ -1,0 +1,6 @@
+READ ME:
+
+1. upload files to web folder destination
+2. all information will be saved into flashcards.json
+
+ENJOY!
